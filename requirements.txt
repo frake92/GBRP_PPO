@@ -1,0 +1,16 @@
+stable-baselines3[extra]>=2.2.1
+# SB3 v2 uses Gymnasium
+
+gymnasium>=0.29.1
+# Plotting/analysis
+pandas>=2.0.0
+matplotlib>=3.7.0
+
+# Visualization
+pygame>=2.5.2
+
+# Video export (mp4)
+imageio>=2.34.0
+imageio-ffmpeg>=0.5.1
+# Torch is pulled in by SB3, but can be pinned if needed
+# torch>=2.1.0
