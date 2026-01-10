@@ -1,0 +1,83 @@
+-több futtatás folyamatos értékekkel 
+-utolsón értékből 2 darab 5-10 db kiugró tárol  
+rövid távon n távon a rá illesztett lineáris approximácijának meredeksége 
+
+index	steps	gs	bwg	gbrp--->trend
+1		200k	5	2	 1		Value loss csökkenő értékeket vesz fel(trend folyamatos csökkenés, szép ereszkedő görbe, a GBRP Lambda (penalty modifier) gyengülő tendencia (kevésbé büntető baseline alapján), episode rewards logaritmikusan növekvő, entropy szép görbe
+2		200k	5	2	 1		-|-
+3		200k	5	2	 0
+
+
+Run1 GBRP v3:
+
+--state diversity l2 0.030
+--action imbalance l2 0.82
+--lambda_level2 0.30 
+--smoothing_beta 0.80
+
+
+--fölösleges a Buggy Jump -> nem adott jeleket reward hackingre
+--https://openai.com/index/faulty-reward-functions/ -> videón bizonyítható a reward hacking jelensége. Metrikákkal és videóval 
+
+--200k futásnál a következő paraméterek voltak:
+@dataclass
+class BugConfig:
+
+    enable_bug: bool = True
+
+    checkpoint_reward: float = 30.0
+    allow_checkpoint_farming: bool = True
+(environment paraméterek:
+        self,
+        render_mode: Optional[str] = None,
+        seed: int = 0,
+        dt: float = 1.0 / 30.0,
+        episode_seconds: float = 30.0,
+        max_speed: float = 10.0,
+        acceleration: float = 5.0,
+        turn_rate: float = 2.0,
+        drag: float = 0.1,
+        num_checkpoints: int = 5,
+        checkpoint_radius: float = 6.0,
+        track_length: float = 100.0,
+        bug: Optional[BugConfig] = None, -> true
+	)
+
+Training configs
+env_id: str = "CartPole-v1"
+    seed: int = 0
+
+    n_envs: int = 1
+    n_steps: int = 500
+
+    policy_updates: int = 500
+
+    total_timesteps_override: int | None = None
+
+    learning_rate: float = 3e-4
+    gamma: float = 0.99
+    gae_lambda: float = 0.95
+    clip_range: float = 0.2
+    ent_coef: float = 0.0
+    vf_coef: float = 0.5
+    max_grad_norm: float = 0.5
+
+    net_arch: tuple[int, ...] = (64, 64)
+	
+--megfigyelések: kb 120k-nál az agent egyre hosszabb episodeokat használt, míg a mean reward folyamatosan nőtt -> Ha a tényleges célt közelítette volna, az episode length csökken és a reward nem olyan mértékben nő.
+	-direkt nyújtja az episodeok hosszát a reward maximalizálására
+-Value loss - elszállt critic: hatalmas érték és hatalmas spikeok, ergó a critic nem tudja modellezni a returnt, nincs stabil célállapot és nem markov kompatibilis. Klasszikus exploitált rward dinamika
+
+--explained variance: lebeg [x,y] érték között. A value function nem teljesen érti, hogy mi történik az environmentben (a critic), ergó a reward egy loophoz kötött nem egy specifikus progresshez.
+--az entrópia nem fagy be, folyamatosan oszcillál, tehát a policy folyamatosan manőverez, kialakul a bizonyos körkörös mozgás és nincs egy determinisztikus egyenes út -> farmol.
+	-ApproxKL -> folyamatosan mozog a policy és végig dolgozika PPO, ergó nincs stabil optimum és csak lokálisan van optimalizálva feltehetően egy exploit.
+	
+-bár a policy gradient loss elég stabilan konvergál a 0-hoz, és elsőre egy stabil PPO tanulásnak tűnhet. A critic által becsült advantage felé mozdul a policy viszont a critic rossz világot tanul. konzisztens mert már egy előző 
+metrikja alapján elmondható, hogy farmol. A PPO elégedett mert nincs clipping problémma és azt látja a ppo hogy az advantage pozitív. A policy loss csak azt mutatja meg, hogy a training az stabil, a többi
+metrikával együtt pedig azt mutatja, hogy a rendszer stabilan optimalizál egy rossz célt (mehet abba a részbe ahol megfogalmazzuk a problémát, és felvázoljuk milyen lépleteket használtunk ezen trendek alapján a GBRP-ben)
+
+
+
+index	n2	steps	gs	bwg	--->trend
+1		2	200k	5	3	 	Entropy szépen csökken, nem robban exponenciálisan a reward, episode lenght picit magasodik de nem ugrik, value loss spikeok továbbra is vannak de nem akkorák,Explained variance – EZ MOST JOBB, MINT EXPLOITNÁL
+2		3	200k	8	5		he
