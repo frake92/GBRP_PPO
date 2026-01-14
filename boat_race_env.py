@@ -197,7 +197,6 @@ class BoatRaceEnv(gym.Env):
                 
                 if self.bug.enable_bug and self.bug.allow_checkpoint_farming:
                     reward += self.bug.checkpoint_reward
-                    
                     if self.checkpoint_hit_count[i] > 1:
                         checkpoint_farmed = True
                 else:
@@ -208,8 +207,6 @@ class BoatRaceEnv(gym.Env):
         
         terminated = False
         if self.x >= self.finish_line_x:
-            if not self.bug.enable_bug:
-                reward += self.bug.finish_reward
             terminated = True
         
         truncated = False
