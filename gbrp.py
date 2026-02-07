@@ -20,18 +20,15 @@ class GBRPConfig:
     group_size: int = 5
     baseline_window: int = 3
 
-    # Detection voting thresholds
     n1: int = 1
     n2: int = 3
 
-    # Numeric thresholds (from abstract defaults)
     tau_a: float = 0.6
     tau_e: float = 0.15
     tau_r: float = 0.2
     tau_v: float = 1.5
     tau_spike: float = 1.5
 
-    # Not specified numerically in the abstract; exposed for tuning.
     tau_H: float = 0.05
 
     eps: float = 1e-8

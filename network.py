@@ -158,7 +158,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--n-steps", type=int, default=TrainingConfig.n_steps)
     p.add_argument("--n-envs", type=int, default=TrainingConfig.n_envs)
 
-    p.add_argument("--gbrp", action="store_true", help="Enable GBRP reward-protection layer (abstract.tex).")
+    p.add_argument("--gbrp", action="store_true", help="Enable GBRP reward-protection layer")
     p.add_argument("--gbrp-group-size", type=int, default=GBRPConfig.group_size)
     p.add_argument("--gbrp-baseline-window", type=int, default=GBRPConfig.baseline_window)
     p.add_argument("--gbrp-n1", type=int, default=GBRPConfig.n1)
