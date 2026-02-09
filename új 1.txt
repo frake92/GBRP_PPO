@@ -81,3 +81,11 @@ metrikával együtt pedig azt mutatja, hogy a rendszer stabilan optimalizál egy
 index	n2	steps	gs	bwg	--->trend
 1		2	200k	5	3	 	Entropy szépen csökken, nem robban exponenciálisan a reward, episode lenght picit magasodik de nem ugrik, value loss spikeok továbbra is vannak de nem akkorák,Explained variance – EZ MOST JOBB, MINT EXPLOITNÁL
 2		3	200k	8	5		he
+
+
+
+
+
+
+
+bipedalwalker-v3 -> gs 5 bw 3 -> BipedalWalkerGBRP42
