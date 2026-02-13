@@ -164,6 +164,10 @@ class GBRPVecEnvWrapper(VecEnvWrapper):
         lam = self._lambda
         rewards_mod = rewards_raw * lam
 
+        # Gymnasium/SB3 vec envs sometimes return infos as a tuple; we need a mutable list.
+        if not isinstance(infos, list):
+            infos = list(infos)
+
         # Attach diagnostics (raw reward is needed for anti self-deception).
         for i in range(len(infos)):
             infos[i] = dict(infos[i])

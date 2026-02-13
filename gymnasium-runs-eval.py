@@ -1,21 +1,18 @@
 import gymnasium as gym
 from stable_baselines3 import PPO
-from gymnasium.wrappers import RecordVideo
 import os
+import ale_py
+from stable_baselines3.common.env_util import make_atari_env
+from stable_baselines3.common.vec_env import VecVideoRecorder
+from cnn_network import build_env
 
 # --- BEÁLLÍTÁSOK ---
-MODEL_PATH = "runs/Seed42/BipedalWalkerGBRP42_2/final_model.zip"
-VIDEO_FOLDER = "runs/Seed42/BipedalWalkerGBRP42_2" # Ide menti majd a videókat
+MODEL_PATH = "runs/seaquest_gbrp/final_model.zip"
+VIDEO_FOLDER = "runs/seaquest_gbrp" # Ide menti majd a videókat
 
 def main():
-    # 1. Alap környezet (rgb_array mód kell a videóhoz)
-    env = gym.make("BipedalWalker-v3", render_mode="rgb_array")
-
-    # 2. Videó mentő wrapper hozzáadása
-    # Ez minden epizódot felvesz (episode_trigger=lambda x: True)
-    env = RecordVideo(env, video_folder=VIDEO_FOLDER, 
-                      episode_trigger=lambda x: True, 
-                      name_prefix="gbrp_walker_video")
+    # Ugyanaz a wrapper lánc, mint tanításkor, csak 1 env-vel
+    env = build_env("ALE/Seaquest-v5", n_envs=1, seed=0)
 
     # 3. Modell betöltése
     try:
@@ -25,23 +22,32 @@ def main():
         print(f"Hiba a betöltésnél: {e}")
         return
 
-    obs, _ = env.reset()
-    print("Felvétel indul... fuss le legalább egy teljes kört!")
+    # 2. Videó mentő wrapper VecEnv-hez
+    #    Minden epizódról készít videót (record_video_trigger=lambda x: True)
+    env = VecVideoRecorder(
+        env,
+        VIDEO_FOLDER,
+        record_video_trigger=lambda ep_id: True,
+        video_length=10_000,
+        name_prefix="seaquest_ppo",
+    )
 
-    # Futtatunk pár epizódot
-    for episode in range(3): # Itt megadhatod hány kört vegyen fel
-        terminated = False
-        truncated = False
-        obs, _ = env.reset()
-        
-        while not (terminated or truncated):
-            action, _states = model.predict(obs, deterministic=True)
-            obs, reward, terminated, truncated, info = env.step(action)
-            
-            # Megjelenítés a képernyőn is (opcionális, de jó látni)
-            env.render() 
-        
-        print(f"{episode+1}. epizód kész, mentve!")
+    obs = env.reset()
+    print("Felvétel indul... pár epizódot rögzítek!")
+
+    # Futtatunk pár epizódot (n_envs=1, ezért a done flag egy 1 elemű tömb)
+    n_episodes = 3
+    episode = 0
+    while episode < n_episodes:
+        action, _states = model.predict(obs, deterministic=True)
+        obs, rewards, dones, infos = env.step(action)
+
+        # Opcionális render (ha van megjelenítő)
+        env.render()
+
+        if dones[0]:
+            episode += 1
+            print(f"{episode}. epizód kész, mentve!")
 
     # Fontos a bezárás, különben nem menti el rendesen a fájlt!
     env.close()
