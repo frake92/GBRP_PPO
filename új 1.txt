@@ -89,3 +89,5 @@ index	n2	steps	gs	bwg	--->trend
 
 
 bipedalwalker-v3 -> gs 5 bw 3 -> BipedalWalkerGBRP42
+bipedalwalker-v3 -> gs 3 bw 2 -> BipedalWalkerGBRP42_2
+bipedalwalker-v3 -> gs 5 bw 3 -> BipedalWalkerGBRP42_3 3 millió steps

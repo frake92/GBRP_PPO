@@ -4,8 +4,8 @@ from gymnasium.wrappers import RecordVideo
 import os
 
 # --- BEÁLLÍTÁSOK ---
-MODEL_PATH = "runs/Seed42/BipedalWalkerGBRP42/final_model.zip"
-VIDEO_FOLDER = "runs/Seed42/BipedalWalkerGBRP42" # Ide menti majd a videókat
+MODEL_PATH = "runs/Seed42/BipedalWalkerGBRP42_2/final_model.zip"
+VIDEO_FOLDER = "runs/Seed42/BipedalWalkerGBRP42_2" # Ide menti majd a videókat
 
 def main():
     # 1. Alap környezet (rgb_array mód kell a videóhoz)
