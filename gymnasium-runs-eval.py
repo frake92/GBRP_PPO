@@ -1,18 +1,21 @@
+import os
+
 import gymnasium as gym
 from stable_baselines3 import PPO
-import os
-import ale_py
-from stable_baselines3.common.env_util import make_atari_env
+from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.vec_env import VecVideoRecorder
-from cnn_network import build_env
+
 
 # --- BEÁLLÍTÁSOK ---
-MODEL_PATH = "runs/seaquest_gbrp/final_model.zip"
-VIDEO_FOLDER = "runs/seaquest_gbrp" # Ide menti majd a videókat
+ENV_ID = "BipedalWalker-v3"
+SEED = 42
+MODEL_PATH = "runs/Seed42/BipedalWalker - Modified Gymnasium/BipedalWalkerGBRPMD42/final_model.zip"
+VIDEO_FOLDER = "runs/Seed42/BipedalWalker - Modified Gymnasium/BipedalWalkerGBRPMD42/"  # Ide menti majd a videókat
+
 
 def main():
-    # Ugyanaz a wrapper lánc, mint tanításkor, csak 1 env-vel
-    env = build_env("ALE/Seaquest-v5", n_envs=1, seed=0)
+    # Egyszerű vektorizált env BipedalWalkerhez (ugyanúgy, mint tanításkor a network.py-ben)
+    env = make_vec_env(ENV_ID, n_envs=1, seed=SEED)
 
     # 3. Modell betöltése
     try:
@@ -29,7 +32,7 @@ def main():
         VIDEO_FOLDER,
         record_video_trigger=lambda ep_id: True,
         video_length=10_000,
-        name_prefix="seaquest_ppo",
+        name_prefix="bipedalwalker_gbrp",
     )
 
     obs = env.reset()
