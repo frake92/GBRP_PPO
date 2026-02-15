@@ -33,9 +33,6 @@ class GBRPConfig:
 
     eps: float = 1e-8
 
-    enable_episode_length_coupling: bool = False
-    continuous_action_boundary_frac: float = 0.05
-
 
 @dataclass
 class _UpdateStats:
@@ -76,27 +73,14 @@ class GBRPVecEnvWrapper(VecEnvWrapper):
         self._lambda: float = float(initial_lambda)
 
         self._action_space_discrete_n: Optional[int] = None
-        self._action_space_box: bool = False
-        self._action_low: Optional[np.ndarray] = None
-        self._action_high: Optional[np.ndarray] = None
-
         try:
             # VecEnv has a single action_space describing all envs.
             from gymnasium import spaces
 
             if isinstance(self.action_space, spaces.Discrete):
                 self._action_space_discrete_n = int(self.action_space.n)
-
-            elif isinstance(self.action_space, spaces.Box):
-                self._action_space_box = True
-                self._action_low = np.asarray(self.action_space.low, dtype=np.float64)
-                self._action_high = np.asarray(self.action_space.high, dtype=np.float64)
-
         except Exception:
             self._action_space_discrete_n = None
-            self._action_space_box = False
-            self._action_low = None
-            self._action_high = None
 
         self._pending_actions: Optional[np.ndarray] = None
         self.reset_rollout_tracking()
@@ -119,10 +103,6 @@ class GBRPVecEnvWrapper(VecEnvWrapper):
 
         self._action_total: int = 0
 
-        # Continuous action stats (Box): count how often actions are near bounds
-        self._action_near_bound_count: int = 0
-        self._action_cont_total: int = 0
-
         self._raw_ep_returns = np.zeros(self.num_envs, dtype=np.float64)
         self._raw_ep_lengths = np.zeros(self.num_envs, dtype=np.int64)
         self._completed_raw_ep_returns: List[float] = []
@@ -135,14 +115,8 @@ class GBRPVecEnvWrapper(VecEnvWrapper):
             raw_rewards = raw_rewards.reshape((-1, self.num_envs))
 
         action_imbalance = float("nan")
-
-        # Discrete: max-action frequency
         if self._action_counts is not None and self._action_total > 0:
             action_imbalance = float(self._action_counts.max() / max(1, self._action_total))
-
-        # Continuous (Box): near-boundary frequency
-        elif getattr(self, "_action_cont_total", 0) > 0:
-            action_imbalance = float(self._action_near_bound_count / max(1, self._action_cont_total))
 
         ep_len_mean = float("nan")
         if self._completed_raw_ep_lengths:
@@ -168,32 +142,6 @@ class GBRPVecEnvWrapper(VecEnvWrapper):
                 if 0 <= int(a) < len(self._action_counts):
                     self._action_counts[int(a)] += 1
                     self._action_total += 1
-
-        # Continuous (Box) action imbalance: near-boundary frequency
-        if self._action_space_box and (self._action_low is not None) and (self._action_high is not None):
-            a = np.asarray(actions, dtype=np.float64)
-
-            # Ensure shape (n_envs, action_dim)
-            if a.ndim == 1:
-                a = a.reshape((self.num_envs, -1))
-
-            low = self._action_low.reshape((1, -1))
-            high = self._action_high.reshape((1, -1))
-
-            # Only meaningful where bounds are finite and range > 0
-            finite = np.isfinite(low) & np.isfinite(high)
-            rng = (high - low)
-            valid = finite & (rng > 0)
-
-            if np.any(valid):
-                frac = float(getattr(getattr(self, "cfg", None), "continuous_action_boundary_frac", 0.05))  # safe fallback
-                # Compute closeness to lower/upper bounds
-                near_low = (a - low) <= (frac * rng)
-                near_high = (high - a) <= (frac * rng)
-                near = (near_low | near_high) & valid
-
-                self._action_near_bound_count += int(np.sum(near))
-                self._action_cont_total += int(np.sum(valid))
 
         return self.venv.step_async(actions)
 
@@ -494,9 +442,8 @@ class GBRPCallback(BaseCallback):
             r_spike = float(barR_raw / (mu_R + eps))
 
         E_len = 0
-        if self.cfg.enable_episode_length_coupling:
-            if np.isfinite(mu_L) and np.isfinite(mu_R) and np.isfinite(barL) and np.isfinite(barR_raw):
-                E_len = int((barL > mu_L) and (barR_raw > mu_R))
+        if np.isfinite(mu_L) and np.isfinite(mu_R) and np.isfinite(barL) and np.isfinite(barR_raw):
+            E_len = int((barL > mu_L) and (barR_raw > mu_R))
 
         E_EV = 0
         if np.isfinite(ev_group):
