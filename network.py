@@ -164,6 +164,11 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--gbrp-n1", type=int, default=GBRPConfig.n1)
     p.add_argument("--gbrp-n2", type=int, default=GBRPConfig.n2)
     p.add_argument("--gbrp-tau-h", type=float, default=GBRPConfig.tau_H, help="Entropy oscillation threshold")
+    p.add_argument(
+        "--gbrp-disable-e-len",
+        action="store_true",
+        help="Disable GBRP E_len (episode length / reward coupling) signal.",
+    )
 
     p.add_argument("--log-root", default="runs")
     p.add_argument("--run-name", default="")
@@ -179,6 +184,7 @@ def main() -> None:
         n1=int(args.gbrp_n1),
         n2=int(args.gbrp_n2),
         tau_H=float(args.gbrp_tau_h),
+        enable_E_len=not bool(getattr(args, "gbrp_disable_e_len", False)),
     )
 
     cfg = TrainingConfig(

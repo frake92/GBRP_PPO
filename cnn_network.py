@@ -1,4 +1,9 @@
-# cnn_network.py
+"""CNN-based PPO training script for Atari Seaquest with optional GBRP.
+
+Now supports CLI arguments so it can be used in automated sweeps.
+"""
+
+import argparse
 import os
 import time
 from pathlib import Path
@@ -16,7 +21,6 @@ from stable_baselines3.common.vec_env import (
 )
 
 # --- GBRP (optional) ---
-# Ha nem kell GBRP, csak állítsd USE_GBRP = False-ra
 from gbrp import GBRPCallback, GBRPConfig, GBRPVecEnvWrapper
 
 
@@ -41,16 +45,50 @@ def build_env(env_id: str, n_envs: int, seed: int):
     return env
 
 
-def main():
-    # ------------ CONFIG ------------
-    env_id = "ALE/Seaquest-v5"
-    seed = 0
+def parse_args() -> argparse.Namespace:
+    """Parse CLI arguments for Seaquest training.
 
-    # Atarihoz gyakran a 4 env jobb, mint 8 (CPU emulator bottleneck miatt)
-    n_envs = 4
+    Designed to mirror the most important knobs from network.py
+    so we can orchestrate PPO vs GBRP runs in a consistent way.
+    """
 
-    total_timesteps = 2_000_000  # <- amit kértél
-    use_gbrp = True              # <- True: PPO+GBRP, False: sima PPO
+    p = argparse.ArgumentParser(description="Train PPO/CNN on Seaquest with optional GBRP.")
+    p.add_argument("--env", default="ALE/Seaquest-v5")
+    p.add_argument("--seed", type=int, default=0)
+
+    # Training time
+    p.add_argument("--total-timesteps", type=int, default=2_000_000)
+    p.add_argument("--n-envs", type=int, default=4)
+
+    # GBRP on/off and core params
+    p.add_argument("--gbrp", action="store_true", help="Enable GBRP reward-protection layer")
+    p.add_argument("--gbrp-group-size", type=int, default=GBRPConfig.group_size)
+    p.add_argument("--gbrp-baseline-window", type=int, default=GBRPConfig.baseline_window)
+    p.add_argument("--gbrp-n1", type=int, default=GBRPConfig.n1)
+    p.add_argument("--gbrp-n2", type=int, default=GBRPConfig.n2)
+    p.add_argument("--gbrp-tau-h", type=float, default=GBRPConfig.tau_H, help="Entropy oscillation threshold")
+    p.add_argument(
+        "--gbrp-disable-e-len",
+        action="store_true",
+        help="Disable GBRP E_len (episode length / reward coupling) signal.",
+    )
+
+    # Logging layout similar to network.py
+    p.add_argument("--log-root", default="runs")
+    p.add_argument("--run-name", default="")
+
+    return p.parse_args()
+
+
+def main() -> None:
+    args = parse_args()
+
+    env_id = args.env
+    seed = int(args.seed)
+    n_envs = int(args.n_envs)
+    total_timesteps = int(args.total_timesteps)
+
+    use_gbrp = bool(args.gbrp)
 
     # PPO hyperparam baseline (Atari-hoz oké)
     learning_rate = 2.5e-4
@@ -58,8 +96,13 @@ def main():
     batch_size = 256
     n_epochs = 4
 
-    # log dir
-    run_dir = Path("runs") / f"seaquest_{'gbrp' if use_gbrp else 'ppo'}"
+    # log dir: mirror network.py style (log_root / run_name)
+    run_name = args.run_name.strip()
+    if not run_name:
+        prefix = "seaquest_gbrp" if use_gbrp else "seaquest_ppo"
+        run_name = f"{prefix}_{time.strftime('%Y%m%d_%H%M%S')}"
+
+    run_dir = Path(args.log_root) / run_name
     run_dir.mkdir(parents=True, exist_ok=True)
 
     # ------------ ENV ------------
@@ -69,7 +112,15 @@ def main():
     callback = None
     if use_gbrp:
         env = GBRPVecEnvWrapper(env)
-        callback = GBRPCallback(GBRPConfig())
+        gbrp_cfg = GBRPConfig(
+            group_size=int(args.gbrp_group_size),
+            baseline_window=int(args.gbrp_baseline_window),
+            n1=int(args.gbrp_n1),
+            n2=int(args.gbrp_n2),
+            tau_H=float(args.gbrp_tau_h),
+            enable_E_len=not bool(getattr(args, "gbrp_disable_e_len", False)),
+        )
+        callback = GBRPCallback(gbrp_cfg)
 
     # ------------ MODEL ------------
     model = PPO(

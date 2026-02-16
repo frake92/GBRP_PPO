@@ -33,6 +33,9 @@ class GBRPConfig:
 
     eps: float = 1e-8
 
+    # Ha False, az E_len jel (episode_len_reward_coupling) teljesen ki van kapcsolva
+    enable_E_len: bool = True
+
 
 @dataclass
 class _UpdateStats:
@@ -442,8 +445,14 @@ class GBRPCallback(BaseCallback):
             r_spike = float(barR_raw / (mu_R + eps))
 
         E_len = 0
-        if np.isfinite(mu_L) and np.isfinite(mu_R) and np.isfinite(barL) and np.isfinite(barR_raw):
-            E_len = int((barL > mu_L) and (barR_raw > mu_R))
+        if self.cfg.enable_E_len:
+            if (
+                np.isfinite(mu_L)
+                and np.isfinite(mu_R)
+                and np.isfinite(barL)
+                and np.isfinite(barR_raw)
+            ):
+                E_len = int((barL > mu_L) and (barR_raw > mu_R))
 
         E_EV = 0
         if np.isfinite(ev_group):
