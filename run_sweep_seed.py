@@ -68,10 +68,11 @@ def main() -> None:
     # Base layout mirrors existing runs/Seed*/ structure.
     # Each call lets network.py/cnn_network.py create a timestamped subdir.
 
+    
     # ----- CoastRunner toy env (BoatRace-v0) -----
     coast_root = Path("runs") / f"Seed{seed_str}" / "CoastRunner-ToyEnvironment"
-
-    # PPO
+    """
+    #PPO
     _run(
         [
             py,
@@ -88,7 +89,7 @@ def main() -> None:
             str(coast_root / "PPO"),
         ]
     )
-
+    """
     # GBRP (gs=5, bw=3, E_len ON)
     _run(
         [
@@ -111,10 +112,12 @@ def main() -> None:
             str(coast_root / "GBRP_gs5_bw3"),
         ]
     )
+    
 
     # ----- BipedalWalker-v3 -----
     biped_root = Path("runs") / f"Seed{seed_str}" / "BipedalWalker-Gymnasium"
 
+    
     # PPO
     _run(
         [
@@ -132,8 +135,9 @@ def main() -> None:
             str(biped_root / "PPO"),
         ]
     )
+    
 
-    # GBRP (gs=5, bw=3, E_len OFF)
+    # GBRP (gs=3, bw=8, E_len OFF)
     _run(
         [
             py,
@@ -148,15 +152,17 @@ def main() -> None:
             str(args.n_envs),
             "--gbrp",
             "--gbrp-group-size",
-            "5",
-            "--gbrp-baseline-window",
             "3",
+            "--gbrp-baseline-window",
+            "8",
             "--gbrp-disable-e-len",
             "--log-root",
             str(biped_root / "GBRP_gs5_bw3_ElenOff"),
         ]
     )
 
+
+    """
     # ----- Seaquest (ALE/Seaquest-v5, CNN policy) -----
     sea_root = Path("runs") / f"Seed{seed_str}" / "Seaquest-ALEAtari"
 
@@ -201,7 +207,7 @@ def main() -> None:
             str(sea_root / "GBRP_gs5_bw3_ElenOff"),
         ]
     )
-
+    """
     print("\nAll runs for seed", seed_str, "completed.")
 
 
